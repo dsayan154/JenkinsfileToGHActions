@@ -1,0 +1,95 @@
+name: PR validation and deploy
+
+on: 
+  pull_request:
+env:
+  froedtert: "froedtert"
+  psjh: "psjh"
+  acme: "acme"
+
+# tiers
+  prod: "prod"
+  uat: "uat"
+  test: "test"
+  dev: "dev"
+  preuat: "preuat"
+
+# git credentials
+  # GIT_TOKEN: ${{ secrets.ghdevexservacctjenkins }}
+
+jobs:
+  matrix-generator:
+    runs-on: ubuntu-latest
+    env:
+      TENANTS: '[{"name": "acme"}, {"name": "froedtert"}, {"name": "psjh"}]'
+      TIERS: '[{"name": "test"}, {"name": "uat"}, {"name": "prod"}, {"name": "preuat"}]'
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - id: generate
+        name: generate matrix
+        run: |
+          tenants=$(echo ${TENANTS} | jq -r '.[].name')
+          tiers=$(echo ${TIERS} | jq -r '.[].name')
+          jsonMatrixString="{\"Ts\": ["
+          for tier in ${tiers}
+          do
+          for tenant in ${tenants}
+          do
+              if [[ ( ${tier} == "prod" ) && ( ${tenant} == "froedtert" ) || ( ${tier} == "uat" ) && ( ${tenant} == "froedtert" ) || ( ${tier} == "prod" ) && ( ${tenant} == "acme" ) || ( ${tier} == "preuat" ) && ( ${tenant} == "acme" ) || ( ${tier}  == "uat" ) && ( ${tenant} == "psjh" ) || ( ${tier} == "prod" ) && ( ${tenant} == "psjh" ) ]]
+              then
+                  key="\"$tier-$tenant\","
+                  jsonMatrixString="$jsonMatrixString $key"
+              fi
+          done
+          done
+          jsonMatrixString="${jsonMatrixString%,}]}"
+          echo "::set-output name=matrix::$( echo "$jsonMatrixString" )"
+
+  main-job:
+    runs-on: ubuntu-latest
+    strategy:
+      # fail-fast: false
+      matrix: ${{fromJson(needs.matrix-generator.outputs.matrix)}}
+    steps:
+    - name: install-dependencies
+      run: |
+        apt-get update
+        apt-get install -yy python3-dev python3-wheel jq npm nodejs --no-install-recommends
+        npm install -g ajv-cli
+        pip3 install setuptools pyyaml boto3 semver ansicolors awscli
+        echo "python3 scripts/test_deliver.py"
+        aws sts get-caller-identity ################THIS MIGHT NOT WORK IN GH Actions
+    # - name: checkout-master
+    - name: checkout-main
+      uses: actions/checkout@v2
+      # with:
+      #   token: ${{ env.GIT_TOKEN }}
+    - name: PR-validation
+      run: |
+        set -xe
+        branch=${GITHUB_REF##*/} echo "scripts/attempt-validation.sh"
+        # when you only want to check vs the change target
+        # scripts/deliver.py --base-dir ${GITHUB_WORKSPACE}  --commit ${env.CHANGE_TARGET} -lll validate
+        # when you want to scan the entire repo
+        echo "scripts/deliver.py --base-dir ${GITHUB_WORKSPACE} validate"
+        tier=$( echo ${{ matrix.Ts }} | cut -d- f1 )
+        tenant=$( echo ${{ matrix.Ts }} | cut -d- f2 )
+        echo "::set-env name=tenants::$(echo ${tenants})"
+        echo "::set-env name=tier::$(echo ${tier})"
+        pwd
+        echo "scripts/check-xacct"
+    - name: ${{ matrix.Ts }} deployment
+      # if: endsWith(${{github.base_ref}},"master")
+      if: endsWith(${{github.base_ref}},"main")
+      run: |
+        # if [[ ${GITHUB_REF##*/} == "master" ]]
+        # then
+          tier=$( echo ${{ matrix.Ts }} | cut -d- f1 )
+          tenant=$( echo ${{ matrix.Ts }} | cut -d- f2 )
+          echo "::set-env name=tenants::$(echo ${tenants})"
+          echo "::set-env name=tier::$(echo ${tier})"
+          pwd
+          echo "scripts/deploy"
+        # else
+        #   echo "This isn't a master branch"

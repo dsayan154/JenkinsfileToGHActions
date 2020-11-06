@@ -1,0 +1,20 @@
+*.tgz
+
+dashboard/src/node_modules/**
+dashboard/src/coverage/**
+
+charts/ecp/charts/
+
+### macOS ###
+*.DS_Store
+.idea/
+.vscode/
+
+scripts/__pycache__/
+
+*~
+**/version.json
+.history
+
+## The config bootstrap tool ##
+configbootstrap*
