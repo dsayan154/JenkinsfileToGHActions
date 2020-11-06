@@ -29,6 +29,7 @@ jobs:
       - id: generate
         name: generate matrix
         run: |
+          set -x
           tenants=$(echo ${TENANTS} | jq -r '.[].name')
           tiers=$(echo ${TIERS} | jq -r '.[].name')
           jsonMatrixString="{\"Ts\": ["
@@ -44,6 +45,7 @@ jobs:
           done
           done
           jsonMatrixString="${jsonMatrixString%,}]}"
+          echo "$jsonMatrixString"
           echo "::set-output name=matrix::$( echo "$jsonMatrixString" )"
 
   main-job:
