@@ -60,11 +60,11 @@ jobs:
     - name: install-dependencies
       run: |
         #apt-get update
-        apt-get install -yy python3-dev python3-wheel jq npm nodejs --no-install-recommends
-        npm install -g ajv-cli
+        # apt-get install -yy python3-dev python3-wheel jq npm nodejs --no-install-recommends
+        # npm install -g ajv-cli
         pip3 install setuptools pyyaml boto3 semver ansicolors awscli
         echo "python3 scripts/test_deliver.py"
-        aws sts get-caller-identity ################THIS MIGHT NOT WORK IN GH Actions
+        # aws sts get-caller-identity ################THIS MIGHT NOT WORK IN GH Actions
     # - name: checkout-master
     - name: checkout-main
       uses: actions/checkout@v2
