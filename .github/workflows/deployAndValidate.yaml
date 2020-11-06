@@ -18,41 +18,44 @@ env:
   # GIT_TOKEN: ${{ secrets.ghdevexservacctjenkins }}
 
 jobs:
-  matrix-generator:
-    runs-on: ubuntu-latest
-    env:
-      TENANTS: '[{"name": "acme"}, {"name": "froedtert"}, {"name": "psjh"}]'
-      TIERS: '[{"name": "test"}, {"name": "uat"}, {"name": "prod"}, {"name": "preuat"}]'
-    outputs:
-      matrix: ${{ steps.generate.outputs.matrix }}
-    steps:
-      - id: generate
-        name: generate matrix
-        run: |
-          set -x
-          tenants=$(echo ${TENANTS} | jq -r '.[].name')
-          tiers=$(echo ${TIERS} | jq -r '.[].name')
-          jsonMatrixString="{\"Ts\": ["
-          for tier in ${tiers}
-          do
-          for tenant in ${tenants}
-          do
-              if [[ ( ${tier} == "prod" ) && ( ${tenant} == "froedtert" ) || ( ${tier} == "uat" ) && ( ${tenant} == "froedtert" ) || ( ${tier} == "prod" ) && ( ${tenant} == "acme" ) || ( ${tier} == "preuat" ) && ( ${tenant} == "acme" ) || ( ${tier}  == "uat" ) && ( ${tenant} == "psjh" ) || ( ${tier} == "prod" ) && ( ${tenant} == "psjh" ) ]]
-              then
-                  key="\"$tier-$tenant\","
-                  jsonMatrixString="$jsonMatrixString $key"
-              fi
-          done
-          done
-          jsonMatrixString="${jsonMatrixString%,}]}"
-          echo "$jsonMatrixString"
-          echo "::set-output name=matrix::$( echo "$jsonMatrixString" )"
+  # matrix-generator:
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     TENANTS: '[{"name": "acme"}, {"name": "froedtert"}, {"name": "psjh"}]'
+  #     TIERS: '[{"name": "test"}, {"name": "uat"}, {"name": "prod"}, {"name": "preuat"}]'
+  #   outputs:
+  #     matrix: ${{ steps.generate.outputs.matrix }}
+  #   steps:
+  #     - id: generate
+  #       name: generate matrix
+  #       run: |
+  #         set -x
+  #         tenants=$(echo ${TENANTS} | jq -r '.[].name')
+  #         tiers=$(echo ${TIERS} | jq -r '.[].name')
+  #         # jsonMatrixString="{\"Ts\": ["
+  #         jsonMatrixString="{\"include\":["
+  #         for tier in ${tiers}
+  #         do
+  #           for tenant in ${tenants}
+  #           do
+  #               if [[ ( ${tier} == "prod" ) && ( ${tenant} == "froedtert" ) || ( ${tier} == "uat" ) && ( ${tenant} == "froedtert" ) || ( ${tier} == "prod" ) && ( ${tenant} == "acme" ) || ( ${tier} == "preuat" ) && ( ${tenant} == "acme" ) || ( ${tier}  == "uat" ) && ( ${tenant} == "psjh" ) || ( ${tier} == "prod" ) && ( ${tenant} == "psjh" ) ]]
+  #               then
+  #                   key="{\"Ts\":\"$tier-$tenant\"},"
+  #                   jsonMatrixString="$jsonMatrixString$key"
+  #               fi
+  #           done
+  #         done
+  #         jsonMatrixString="${jsonMatrixString%,}]}"
+  #         echo "$jsonMatrixString"
+  #         echo "::set-output name=matrix::$( echo "$jsonMatrixString" )"
 
   main-job:
     runs-on: ubuntu-latest
     strategy:
       # fail-fast: false
-      matrix: ${{fromJson(needs.matrix-generator.outputs.matrix)}}
+      # matrix: ${{fromJson(needs.matrix-generator.outputs.matrix)}}
+      matrix: 
+        Ts: ["uat-froedtert", "uat-psjh", "prod-acme", "prod-froedtert", "prod-psjh", "preuat-acme"]
     steps:
     - name: install-dependencies
       run: |
