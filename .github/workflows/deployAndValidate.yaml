@@ -78,8 +78,8 @@ jobs:
         # scripts/deliver.py --base-dir ${GITHUB_WORKSPACE}  --commit ${env.CHANGE_TARGET} -lll validate
         # when you want to scan the entire repo
         echo "scripts/deliver.py --base-dir ${GITHUB_WORKSPACE} validate"
-        tier=$( echo ${{ matrix.Ts }} | cut -d- f1 )
-        tenant=$( echo ${{ matrix.Ts }} | cut -d- f2 )
+        tier=$( echo ${{ matrix.Ts }} | cut -d \- f 1 )
+        tenant=$( echo ${{ matrix.Ts }} | cut -d \- f 2 )
         echo "::set-env name=tenants::$(echo ${tenants})"
         echo "::set-env name=tier::$(echo ${tier})"
         pwd
@@ -90,8 +90,8 @@ jobs:
       run: |
         # if [[ ${GITHUB_REF##*/} == "master" ]]
         # then
-          tier=$( echo ${{ matrix.Ts }} | cut -d- f1 )
-          tenant=$( echo ${{ matrix.Ts }} | cut -d- f2 )
+          tier=$( echo ${{ matrix.Ts }} | cut -d \- f 1 )
+          tenant=$( echo ${{ matrix.Ts }} | cut -d \- f 2 )
           echo "::set-env name=tenants::$(echo ${tenants})"
           echo "::set-env name=tier::$(echo ${tier})"
           pwd
